@@ -9,14 +9,22 @@ export AFLR2_SCRIPTS="${AFLR2_ROOT}/workdir/scripts"
 
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null
 
+DIRS=(
+  "workdir/targets/" 
+  "workdir/output/" 
+  "libc_shim/build/" 
+  "catchsegv/build/" 
+  "workdir/output/input_ramdisk"
+  "workdir/output/.master_state"
+)
+for DIR in "${DIRS[@]}"; do
+  if [ ! -d "$DIR" ]; then
+    mkdir -p "$DIR"
+  fi
+done
+
 ${AFLR2_SCRIPTS}/aux/create_ramdisks.sh
 ${AFLR2_SCRIPTS}/aux/mkramdisk.sh
 ${AFLR2_SCRIPTS}/aux/symlinks.sh &> /dev/null
 # sometimes you can corrupt the stat of output_ramdisks perms if you interrupt the multicore.py script :/
 ${AFLR2_SCRIPTS}/aux/fix_perms_fuzzing.sh "${AFLR2_ROOT}/workdir/output/output_ramdisks"
-
-DIRS=("workdir/targets/" "workdir/output/" "libc_shim/build/" "catchsegv/build/")
-for DIR in "${DIRS[@]}"; do
-  if [ ! -d "$DIR" ]; then
-    mkdir -p "$DIR"
-done
