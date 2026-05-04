@@ -39,6 +39,11 @@ class ConfigArray:
                 )
             )
 
+# Select which target to run
+VERSION_NAME="fuzzing_23_april"
+VERSION_NAME_ASAN="fuzzing_asan_23_april"
+
+# Assign cores for each power schedule
 ca = ConfigArray()
 ca.setConfig(CPUConfig(asan=False,  arg="-M", power="explore"),     1)
 ca.setConfig(CPUConfig(asan=False,  arg="-S", power="explore"),     3)
@@ -58,8 +63,6 @@ ca.setConfig(CPUConfig(asan=True,   arg="-S", power="exploit"),     1)
 asan_env:Environment = None
 vanilla_env:Environment = None
 setup_print = False;
-VERSION_NAME="fuzzing_23_april"
-VERSION_NAME_ASAN="fuzzing_asan_23_april"
 root_dir = os.getenv("AFLR2_ROOT")
 INPUT_DIR  = f"{root_dir}/workdir/output/input_ramdisk"
 OUTPUT_DIR_BASE = f"{root_dir}/workdir/output/output_ramdisks"

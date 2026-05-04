@@ -18,10 +18,10 @@ def parse_args():
     # todo:
     # parser.add_argument("--config", required=False, type=str, help="Load predefined config.");
     parser.add_argument("-l", "--libs", required=False, default="LD_PRELOAD", type=str, help="Pass libs with LD_PRELOAD or LD_LIBRARY_PATH.")
-    parser.add_argument("-c", "--command", required=False, nargs='+', default="", type=str, help="Prepend command to invocation")
+    parser.add_argument("-c", "--command", required=False, default="", type=str, help="Prepend command to invocation, must be quoted")
     parser.add_argument("-t", "--target", required=True, type=str, help="Custom R2 target taken from targets dir")
-    parser.add_argument("-i", "--inferior", required=False, nargs='+', default="", type=str, help="R2 arguments")
     parser.add_argument("-s", "--shim", action="store_true", required=False, default=False, help="Load libc shim")
+    parser.add_argument("-i", "--inferior", required=False, default="", type=str, help="R2 arguments, must be quoted")
     return parser.parse_args()
 
 def prepare_env(args):

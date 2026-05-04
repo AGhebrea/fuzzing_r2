@@ -1,5 +1,7 @@
 #!/usr/bin/sh
 
+# in some scripts in workdir/scripts/* i use other scripts from https://github.com/AGhebrea/scripts
+
 trap 'trap - ERR; return 1' ERR
 
 export AFLR2_OUTRAMDISK_SIZE=2

@@ -17,7 +17,6 @@ __attribute__((constructor(101)))
 static void force_core(void){
     struct rlimit rl = {RLIM_INFINITY, RLIM_INFINITY};
     setrlimit(RLIMIT_CORE, &rl);
-    write(1, "seisiesieiseise\n", 16);
     prctl(PR_SET_DUMPABLE, 1);
     stack_t ss ={
         .ss_sp = altstack,
