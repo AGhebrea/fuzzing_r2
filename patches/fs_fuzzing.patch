@@ -1,0 +1,385 @@
+diff --git a/binr/radare2/radare2.c b/binr/radare2/radare2.c
+index 98d358c3dd..ebbc05c43d 100644
+--- a/binr/radare2/radare2.c
++++ b/binr/radare2/radare2.c
+@@ -1,6 +1,10 @@
+ /* radare - LGPL - Copyright 2009-2025 - pancake */
+ 
+ #include <r_main.h>
++#include "../include/r_cmd.h"
++#include "../include/r_config.h"
++#include "../include/r_core.h"
++#include "../include/r_util/r_log.h"
+ 
+ #if EMSCRIPTEN__TODO
+ #include <emscripten.h>
+@@ -98,25 +102,40 @@ static int r_main_r2pipe(int argc, const char **argv) {
+ 	return rc;
+ }
+ 
+-int main(int argc, const char **argv) {
+-	if (argc > 0 && strstr (argv[0], "r2p")) {
+-		return r_main_r2pipe (argc, argv);
+-	}
+-	char *ea = r_sys_getenv ("R2_ARGS");
+-	if (R_STR_ISNOTEMPTY (ea)) {
+-		R_LOG_INFO ("Using R2_ARGS: \"%s\"", ea);
+-		if (!r_str_startswith (ea, argv[0])) {
+-			R_LOG_WARN ("R2_ARGS should start with argv[0]=%s", argv[0]);
+-		}
+-		char **argv = r_str_argv (ea, &argc);
+-		r_sys_setenv ("R2_ARGS", NULL);
+-		int res = r_main_radare2 (argc, (const char **)argv);
+-		free (ea);
+-		free (argv);
+-		return res;
+-	}
+-	free (ea);
+-	return r_main_radare2 (argc, argv);
++#ifndef __AFL_FUZZ_TESTCASE_LEN
++  ssize_t fuzz_len;
++  #define __AFL_FUZZ_TESTCASE_LEN fuzz_len
++  unsigned char fuzz_buf[1024000];
++  #define __AFL_FUZZ_TESTCASE_BUF fuzz_buf
++  #define __AFL_FUZZ_INIT() void sync(void);
++  #define __AFL_LOOP(x) ((fuzz_len = read(0, fuzz_buf, sizeof(fuzz_buf))) > 0 ? 1 : 0)
++  #define __AFL_INIT() sync()
++#endif
++__AFL_FUZZ_INIT();
++int main(int argc, const char **argv)
++{
++    int do_afl_loop = 0;
++    int buf_len;
++    unsigned char* buf;
++    r_log_set_level(R_LOG_LEVEL_LAST);
++    for(size_t i = 0; i < argc; ++i)
++        if(strcmp(argv[i], "--fuzzing_loop") == 0){
++            do_afl_loop = 1;
++            break;
++        }
++    __AFL_INIT();
++    if(do_afl_loop){
++        buf = __AFL_FUZZ_TESTCASE_BUF;
++        while (__AFL_LOOP(1000)){
++            buf_len = __AFL_FUZZ_TESTCASE_LEN;
++            (void)r_main_radare2(argc, argv, buf, buf_len);
++        }
++    }else{
++        buf = NULL;
++        buf_len = 0;
++        (void)r_main_radare2(argc, argv, buf, buf_len);
++    }
++    return 0;
+ }
+ 
+ #endif
+diff --git a/libr/asm/asm.c b/libr/asm/asm.c
+index bf45da2210..51a80e3a3b 100644
+--- a/libr/asm/asm.c
++++ b/libr/asm/asm.c
+@@ -407,37 +407,7 @@ R_API bool r_asm_use_parser(RAsm *a, const char *name) {
+ }
+ 
+ static void load_asm_descriptions(RAsm *a) {
+-	const char *arch = a->config->arch;
+-	if (!arch || !strcmp (arch, "any")) {
+-		arch = a->config->cpu;
+-	}
+-	if (!strcmp (arch, "sbpf")) {
+-		arch = "bpf";
+-	}
+-	if (!arch) {
+-		return;
+-	}
+-#if HAVE_GPERF
+-	SdbGperf *gp = r_asm_get_gperf (arch);
+-	if (gp) {
+-		sdb_free (a->pair);
+-		a->pair = sdb_new0 ();
+-		sdb_open_gperf (a->pair, gp);
+-		return;
+-	}
+-#endif
+-	char *r2prefix = r_str_r2_prefix (R2_SDB_OPCODES);
+-	char *file = r_str_newf ("%s/%s.sdb", r_str_getf (r2prefix), arch);
+-	if (file) {
+-#if 0
+-		sdb_reset (a->pair);
+-#else
+-		sdb_free (a->pair);
+-		a->pair = sdb_new (NULL, file, 0);
+-#endif
+-		free (file);
+-	}
+-	free (r2prefix);
++    return;
+ }
+ 
+ static void r_asm_update_session(RAsm *a) {
+diff --git a/libr/core/cconfig.c b/libr/core/cconfig.c
+index a97d66a163..9bab2e2a22 100644
+--- a/libr/core/cconfig.c
++++ b/libr/core/cconfig.c
+@@ -4320,12 +4320,9 @@ R_API int r_core_config_init(RCore *core) {
+ 	free (whoami);
+ 	SETS ("dir.fortunes", R2_DATDIR "/radare2/" R2_VERSION "/fortunes", "directory to load fortune files from");
+ 	SETB ("cfg.fortunes", "true", "if enabled show tips at start");
+-	RList *fortune_types = r_core_fortune_types (core);
+-	char *fts = r_str_list_join (fortune_types, ",");
+-	r_list_free (fortune_types);
++	char *fts = "";
+ 	char *fortune_desc = r_str_newf ("type of fortunes to show(%s)", fts);
+ 	SETCB ("cfg.fortunes.type", fts, &cb_cfg_fortunes_type, fortune_desc);
+-	free (fts);
+ 	free (fortune_desc);
+ 	SETB ("cfg.fortunes.clippy", "false", "use ?E instead of ?e");
+ 	SETB ("cfg.fortunes.tts", "false", "speak out the fortune");
+diff --git a/libr/core/core.c b/libr/core/core.c
+index 066de3fd69..cdad65a35a 100644
+--- a/libr/core/core.c
++++ b/libr/core/core.c
+@@ -2503,7 +2503,7 @@ R_API bool r_core_init(RCore *core) {
+ 	core->ev = r_event_new (core);
+ 	r_event_hook (core->ev, R_EVENT_ALL, cb_event_handler, NULL);
+ 	core->max_cmd_depth = R_CONS_CMD_DEPTH + 1;
+-	core->sdb = sdb_new (NULL, "r2kv.sdb", 0); // XXX: path must be in home?
++	core->sdb = NULL; // it seems we can get away with this.
+ 	core->lastsearch = NULL;
+ 	core->cmdfilter = NULL;
+ 	core->sessionfile = NULL;
+diff --git a/libr/core/fortune.c b/libr/core/fortune.c
+index d6193ed986..d707759b26 100644
+--- a/libr/core/fortune.c
++++ b/libr/core/fortune.c
+@@ -132,21 +132,5 @@ R_API RList *r_core_fortune_types(RCore *core) {
+ }
+ 
+ R_API void r_core_fortune_print_random(RCore *core) {
+-	R_RETURN_IF_FAIL (core);
+-	if (r_sandbox_check (R_SANDBOX_GRAIN_FILES | R_SANDBOX_GRAIN_DISK)) {
+-		char *line = getRandomLine (core);
+-		if (R_STR_ISEMPTY (line)) {
+-			r_cons_println (core->cons, " -- No cookie is also a cookie");
+-		} else {
+-			if (r_config_get_b (core->config, "cfg.fortunes.clippy")) {
+-				r_core_clippy (core, line);
+-			} else {
+-				r_cons_printf (core->cons, " -- %s\n", line);
+-			}
+-			if (r_config_get_b (core->config, "cfg.fortunes.tts")) {
+-				r_sys_tts (line, true);
+-			}
+-		}
+-		free (line);
+-	}
++	return;
+ }
+diff --git a/libr/debug/dsignal.c b/libr/debug/dsignal.c
+index 5357f2f25c..46b4d01a10 100644
+--- a/libr/debug/dsignal.c
++++ b/libr/debug/dsignal.c
+@@ -57,7 +57,7 @@ R_API void r_debug_signal_fini(RDebug *dbg) {
+ R_API void r_debug_signal_init(RDebug *dbg) {
+ 	int i;
+ 	// XXX
+-	DB = sdb_new (NULL, "signals", 0);
++	DB = NULL; // it seems that we can get away with this.
+ 	for (i = 0; signals[i].k; i++) {
+ 		sdb_set (DB, signals[i].k, signals[i].v, 0);
+ 		sdb_set (DB, signals[i].v, signals[i].k, 0);
+diff --git a/libr/include/r_main.h b/libr/include/r_main.h
+index 1cf62b4c5e..3b87c2a4ed 100644
+--- a/libr/include/r_main.h
++++ b/libr/include/r_main.h
+@@ -31,7 +31,7 @@ R_API int r_main_rax2(int argc, const char **argv);
+ R_API int r_main_rarun2(int argc, const char **argv);
+ R_API int r_main_rahash2(int argc, const char **argv);
+ R_API int r_main_rabin2(int argc, const char **argv);
+-R_API int r_main_radare2(int argc, const char **argv);
++R_API int r_main_radare2(int argc, const char **argv, unsigned char* buf, int buf_len);
+ R_API int r_main_rasm2(int argc, const char **argv);
+ R_API int r_main_r2agent(int argc, const char **argv);
+ R_API int r_main_rafind2(int argc, const char **argv);
+diff --git a/libr/include/r_util/r_log.h b/libr/include/r_util/r_log.h
+index 7c14992b46..5b50c694a0 100644
+--- a/libr/include/r_util/r_log.h
++++ b/libr/include/r_util/r_log.h
+@@ -69,13 +69,13 @@ R_API void r_log_add_callback(RLogCallback cb, void *user);
+ R_API void r_log_del_callback(RLogCallback cb);
+ 
+ #if R_LOG_DISABLE
+-#define R_LOG(f,...) do {} while(0)
+-#define R_LOG_FATAL(f,...) do {} while(0)
+-#define R_LOG_ERROR(f,...) do {} while(0)
+-#define R_LOG_INFO(f,...) do {} while(0)
+-#define R_LOG_TODO(f,...) do {} while(0)
+-#define R_LOG_WARN(f,...) do {} while(0)
+-#define R_LOG_DEBUG(f,...) do {} while(0)
++#define R_LOG(f,...) do {} while(0);
++#define R_LOG_FATAL(f,...) do {} while(0);
++#define R_LOG_ERROR(f,...) do {} while(0);
++#define R_LOG_INFO(f,...) do {} while(0);
++#define R_LOG_TODO(f,...) do {} while(0);
++#define R_LOG_WARN(f,...) do {} while(0);
++#define R_LOG_DEBUG(f,...) do {} while(0);
+ #else
+ #define R_LOG(f,...) if (r_log_match (R_LOG_LEVEL_INFO, R_LOG_ORIGIN)) {r_log_message (R_LOG_LEVEL_INFO, R_LOG_ORIGIN, __FILE__, __LINE__, f, ##__VA_ARGS__);}
+ #define R_LOG_FATAL(f,...) if (r_log_match (R_LOG_LEVEL_FATAL, R_LOG_ORIGIN)) {r_log_message (R_LOG_LEVEL_FATAL, R_LOG_ORIGIN, __FILE__, __LINE__, f, ##__VA_ARGS__);}
+diff --git a/libr/ld.script b/libr/ld.script
+index 14243420e2..1dbb6361c3 100644
+--- a/libr/ld.script
++++ b/libr/ld.script
+@@ -1,6 +1,8 @@
+ _ {
+ 	global:
+ 		r_*;
++        __afl_*;
++        _buf_afl_fuzz_testcase_buf*;
+ 	local:
+ 		*;
+ };
+diff --git a/libr/main/main.c b/libr/main/main.c
+index 24a493d061..0843a548ad 100644
+--- a/libr/main/main.c
++++ b/libr/main/main.c
+@@ -19,8 +19,8 @@ static const RMain foo[] = {
+ 	{ "rapatch2", r_main_rapatch2 },
+ 	{ "rahash2", r_main_rahash2 },
+ 	{ "rabin2", r_main_rabin2 },
+-	{ "radare2", r_main_radare2 },
+-	{ "r2", r_main_radare2 },
++	{ "radare2", NULL },
++	{ "r2", NULL },
+ 	{ NULL, NULL }
+ };
+ 
+diff --git a/libr/main/radare2.c b/libr/main/radare2.c
+index f19f5c490a..a13de95dae 100644
+--- a/libr/main/radare2.c
++++ b/libr/main/radare2.c
+@@ -457,13 +457,7 @@ beach:
+ }
+ 
+ static bool mustSaveHistory(RCore *core) {
+-	if (!r_config_get_b (core->config, "scr.hist.save")) {
+-		return false;
+-	}
+-	if (!r_cons_is_interactive (core->cons)) {
+-		return false;
+-	}
+-	return true;
++	return false;
+ }
+ 
+ static inline void autoload_zigns(RCore *r) {
+@@ -749,8 +743,18 @@ static void dp_write(RCore *core, const char *s) {
+ 
+ #define OPTARGS "=012AjMCwxfF:Hhm:e:Enk:NdqQs:p:b:B:a:Lui:I:l:P:R:r:c:D:vVSzuXt"
+ 
+-R_API int r_main_radare2(int argc, const char **argv) {
++R_API int _buf_afl_fuzz_testcase_buf_len;
++R_API unsigned char* _buf_afl_fuzz_testcase_buf;
++__attribute__((weak)) void reset_hooked_libc_state(void);
++void reset_hooked_libc_state(void){ return; }
++R_API int r_main_radare2(int argc, const char **argv, unsigned char* buf, int buf_len){
+ 	int c, ret;
++
++    // :)
++    reset_hooked_libc_state();
++    _buf_afl_fuzz_testcase_buf_len = buf_len;
++    _buf_afl_fuzz_testcase_buf = buf;
++
+ 	RMainRadare2 mr;
+ 	mainr2_init (&mr);
+ 
+@@ -840,7 +844,7 @@ R_API int r_main_radare2(int argc, const char **argv) {
+ 		return 1;
+ 	}
+ 	mr.r = r;
+-	r->r_main_radare2 = r_main_radare2;
++	r->r_main_radare2 = NULL;
+ 	r->r_main_radiff2 = r_main_radiff2;
+ 	r->r_main_rafind2 = r_main_rafind2;
+ 	r->r_main_rabin2 = r_main_rabin2;
+@@ -1260,14 +1264,6 @@ R_API int r_main_radare2(int argc, const char **argv) {
+ 
+ 	r_bin_force_plugin (r->bin, mr.forcebin);
+ 
+-	if (mr.project_name) {
+-		if (!r_core_project_open (r, mr.project_name)) {
+-			R_LOG_ERROR ("Cannot find project");
+-			mainr2_fini (&mr);
+-			return 1;
+-		}
+-	}
+-
+ 	if (mr.do_connect) {
+ 		const char *uri = argv[opt.ind];
+ 		if (opt.ind >= argc) {
+@@ -1304,17 +1300,11 @@ R_API int r_main_radare2(int argc, const char **argv) {
+ 		r_config_set_b (r->config, "scr.utf8", false);
+ 	}
+ 
+-	char *history_file = r_xdg_cachedir ("history");
+-	if (history_file) {
+-		r_line_hist_load (r->cons->line, history_file);
+-		free (history_file);
+-	}
+-
+ 	if (r_config_get_b (r->config, "zign.autoload")) {
+ 		autoload_zigns (r);
+ 	}
+ 
+-	if (R_STR_ISNOTEMPTY (mr.pfile) && r_file_is_directory (mr.pfile)) {
++	if (R_STR_ISNOTEMPTY (mr.pfile) && false) {
+ 		if (mr.debug) {
+ 			R_LOG_ERROR ("Cannot debug directories, yet");
+ 			mainr2_fini (&mr);
+@@ -1894,12 +1884,6 @@ R_API int r_main_radare2(int argc, const char **argv) {
+ 		ret = r->rc;
+ 		goto beach;
+ 	}
+-	if (r_config_get_b (r->config, "scr.prompt")) {
+-		if (mr.run_rc && r_config_get_i (r->config, "cfg.fortunes")) {
+-			r_core_fortune_print_random (r);
+-			r_cons_flush (r->cons);
+-		}
+-	}
+ 	if (mr.sandbox) {
+ 		r_config_set_b (r->config, "cfg.sandbox", true);
+ 	}
+diff --git a/libr/util/sys.c b/libr/util/sys.c
+index 181df67d38..aa9ea4c95a 100644
+--- a/libr/util/sys.c
++++ b/libr/util/sys.c
+@@ -1432,29 +1432,7 @@ R_API void r_sys_set_environ(char **e) {
+ }
+ 
+ R_API char *r_sys_whoami(void) {
+-#if R2__WINDOWS__
+-	char buf[256];
+-	DWORD buf_sz = sizeof (buf);
+-	if (!GetUserName ((LPSTR)buf, (LPDWORD)&buf_sz) ) {
+-		return strdup ("?");
+-	}
+-	return strdup (buf);
+-#elif __wasi__
+-	return strdup ("user");
+-#elif HAVE_TH_LOCAL
+-	char *user = r_sys_getenv ("USER");
+-	return user? user: r_str_newf ("uid%d", getuid ());
+-#else
+-	char buf[32];
+-	// XXX this is not thread safe and getpwuid_r is not available
+-	struct passwd *pw = getpwuid (getuid ());
+-	if (pw) {
+-		return strdup (pw->pw_name);
+-	}
+-	int uid = getuid ();
+-	snprintf (buf, sizeof (buf), "uid%d", uid);
+-	return strdup (buf);
+-#endif
++	return strdup ("fuzzer");
+ }
+ 
+ R_API int r_sys_uid(void) {
