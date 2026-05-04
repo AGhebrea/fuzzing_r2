@@ -12,6 +12,7 @@ export AFLR2_MOCKFILE="${AFLR2_ROOT}/workdir/data/Supercalifragilisticexpialidoc
 export AFLR2_SCRIPTS="${AFLR2_ROOT}/workdir/scripts"
 
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null
+echo core | sudo tee /proc/sys/kernel/core_pattern > /dev/null
 
 DIRS=(
   "workdir/targets/" 
