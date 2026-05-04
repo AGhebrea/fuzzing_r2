@@ -4,10 +4,7 @@
 SYNC_DIR="${AFLR2_ROOT}/workdir/output/.master_state"
 OUTPUT_DIR="${AFLR2_ROOT}/workdir/output/output_ramdisks"
 
-CORES=64
-RAMDISKS=8
-
-for CPUID in $(seq 0 $((CORES - 1))); do
-    DIRID=$((CPUID/RAMDISKS))
+for CPUID in $(seq 0 $((AFLR2_FUZZING_CORES - 1))); do
+    DIRID=$((CPUID/AFLR2_RAMDISKS))
     ln -s "${OUTPUT_DIR}/fuzz_${DIRID}/fuzzer${CPUID}" "${SYNC_DIR}/fuzzer${CPUID}"
 done

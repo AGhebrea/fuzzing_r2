@@ -150,7 +150,7 @@ def main():
         threading.Timer(0.0, do_work, args=[cpu_config]).start()
 
     s = subprocess.Popen([f"{root_dir}/workdir/scripts/aux/rsync.sh"])
-    # watch -n 900 afl-whatsup -s "${ROOT}/workdir/output/.master_state"
+    # watch -n 900 afl-whatsup -s "${AFLR2_ROOT}/workdir/output/.master_state"
 
 if __name__ == "__main__":
     main()
