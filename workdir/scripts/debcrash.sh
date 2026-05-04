@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 TARGET=$1
 if [[ $2 == "-l" ]]; then

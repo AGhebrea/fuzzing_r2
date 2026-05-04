@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 SOURCE="${AFLR2_ROOT}/radare2/"
 if [[ "$#" == 2 ]]; then

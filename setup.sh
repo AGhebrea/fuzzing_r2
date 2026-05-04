@@ -1,10 +1,10 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 trap 'trap - ERR; return 1' ERR
 
 export AFLR2_OUTRAMDISK_SIZE=4
 export AFLR2_FUZZING_CORES=64
-export AFLR2_RAMDISKS=$(( AFLR2_FUZZING_CORES/8+1 ))
+export AFLR2_RAMDISKS=$(( AFLR2_FUZZING_CORES/8 ))
 
 export AFLR2_ROOT="$(pwd)"
 export AFLR2_LIBC_SHIM="${AFLR2_ROOT}/libc_shim/build"

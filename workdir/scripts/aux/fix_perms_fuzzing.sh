@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 sudo chown -R $(whoami) $1
 find $1 -type d -exec chmod 755 {} +

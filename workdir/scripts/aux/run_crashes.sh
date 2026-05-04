@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 CRASH_DIR="${AFLR2_ROOT}/workdir/output/crashes"
 # ./workdir/scripts/run.py -t fuzzing_23_april -i '-AA -NN -qq /home/kali/workspace/projects/r2/fuzzing_r2/workdir/output/crashes/id:000000,sig:11,src:000494,time:670203,execs:33803,op:havoc,rep:5'

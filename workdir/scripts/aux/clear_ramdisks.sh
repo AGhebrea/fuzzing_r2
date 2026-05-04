@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 BASE="${AFLR2_ROOT}/workdir/output/output_ramdisks"
 rm -rf ${BASE}/fuzz_0/*

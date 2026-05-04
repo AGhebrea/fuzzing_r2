@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 TESTCASE_DIR="${2}"
 TARGET_BASE="${AFLR2_ROOT}/workdir/targets/${1}"

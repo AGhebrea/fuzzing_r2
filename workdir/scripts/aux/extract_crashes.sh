@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 MASTER_STATE="${AFLR2_ROOT}/workdir/output/.master_state"
 CRASH_DIR="${AFLR2_ROOT}/workdir/output/crashes"

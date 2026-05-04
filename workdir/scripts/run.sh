@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 
 base="/home/kali/workspace/projects/r2/fuzzing_r2/workdir/targets/vanilla_23_april"
 target="${base}/radare2"

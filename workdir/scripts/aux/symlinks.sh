@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 # i had to modify the afl-whatsup script to work with symlinks.
 
 SYNC_DIR="${AFLR2_ROOT}/workdir/output/.master_state"

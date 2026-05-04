@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/sh
 BASE="${AFLR2_ROOT}/workdir/output/output_ramdisks"
 MASTER_QUEUE_DIR="${AFLR2_ROOT}/workdir/output/queue"
 RAM_DISKS=("${BASE}/fuzz_0" "${BASE}/fuzz_1" "${BASE}/fuzz_2" "${BASE}/fuzz_3" "${BASE}/fuzz_4" "${BASE}/fuzz_5" "${BASE}/fuzz_6" "${BASE}/fuzz_7")
