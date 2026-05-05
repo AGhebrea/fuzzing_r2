@@ -129,6 +129,7 @@ def do_work(cpu_config: CPUConfig):
     while True:
         try:
             arr = [
+                # It's better to prevent than cure. systemd-run is an option to keep memory leaks in check but honesly it's better to lower AFL_LOOP iterations
                 # "systemd-run", "--user", "--scope", "-p", f"MemoryMax={memory_max}G", # f"MemoryHigh={memory_high}G"
                 "numactl", f"--physcpubind={cpu_config.cpu}", "--localalloc",
                 "afl-fuzz", "-p", cpu_config.power, "-t", "10000", "-i", INPUT_DIR, "-o", OUTPUT_DIR,
