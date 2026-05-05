@@ -4,7 +4,7 @@
 
 trap 'trap - ERR; return 1' ERR
 
-export AFLR2_OUTRAMDISK_SIZE=2
+export AFLR2_OUTRAMDISK_SIZE=1
 export AFLR2_FUZZING_CORES=8
 export AFLR2_RAMDISKS=$(( AFLR2_FUZZING_CORES/8 ))
 
