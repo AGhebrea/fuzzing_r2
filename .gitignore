@@ -4,3 +4,4 @@ workdir/targets/
 workdir/output/
 libc_shim/build/
 catchsegv/build/
+.core*

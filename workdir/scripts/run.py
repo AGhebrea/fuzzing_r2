@@ -22,7 +22,11 @@ def parse_args():
     parser.add_argument("-t", "--target", required=True, type=str, help="Custom R2 target taken from targets dir")
     parser.add_argument("-s", "--shim", action="store_true", required=False, default=False, help="Load libc shim")
     parser.add_argument("-i", "--inferior", required=False, default="", type=str, help="R2 arguments, must be quoted")
-    return parser.parse_args()
+    parser.add_argument("-p", "--preload", required=False, default="", type=str, help="Extra libraries to preload")
+    args = parser.parse_args()
+    if args.preload != "" and args.preload[-1] != ":":
+        args.preload += ":"
+    return args
 
 def prepare_env(args):
     env = os.environ.copy()
@@ -34,7 +38,7 @@ def prepare_env(args):
     if args.libs == "LD_LIBRARY_PATH":
         env["LD_LIBRARY_PATH"] = lib_dir
     else:
-        env["LD_PRELOAD"] += f"/usr/lib/libasan.so:{lib_dir}/libr_anal.so:{lib_dir}/libr_arch.so:{lib_dir}/libr_asm.so:{lib_dir}/libr_bin.so:{lib_dir}/libr_bp.so:{lib_dir}/libr_config.so:{lib_dir}/libr_cons.so:{lib_dir}/libr_core.so:{lib_dir}/libr_debug.so:{lib_dir}/libr_egg.so:{lib_dir}/libr_esil.so:{lib_dir}/libr_flag.so:{lib_dir}/libr_fs.so:{lib_dir}/libr_io.so:{lib_dir}/libr_lang.so:{lib_dir}/libr_magic.so:{lib_dir}/libr_main.so:{lib_dir}/libr_muta.so:{lib_dir}/libr_reg.so:{lib_dir}/libr_search.so:{lib_dir}/libr_socket.so:{lib_dir}/libr_syscall.so:{lib_dir}/libr_util.so:{lib_dir}/io_shm.so"
+        env["LD_PRELOAD"] += f"{args.preload}{lib_dir}/libr_anal.so:{lib_dir}/libr_arch.so:{lib_dir}/libr_asm.so:{lib_dir}/libr_bin.so:{lib_dir}/libr_bp.so:{lib_dir}/libr_config.so:{lib_dir}/libr_cons.so:{lib_dir}/libr_core.so:{lib_dir}/libr_debug.so:{lib_dir}/libr_egg.so:{lib_dir}/libr_esil.so:{lib_dir}/libr_flag.so:{lib_dir}/libr_fs.so:{lib_dir}/libr_io.so:{lib_dir}/libr_lang.so:{lib_dir}/libr_magic.so:{lib_dir}/libr_main.so:{lib_dir}/libr_muta.so:{lib_dir}/libr_reg.so:{lib_dir}/libr_search.so:{lib_dir}/libr_socket.so:{lib_dir}/libr_syscall.so:{lib_dir}/libr_util.so:{lib_dir}/io_shm.so"
     return env
 
 def normalize(arr):
