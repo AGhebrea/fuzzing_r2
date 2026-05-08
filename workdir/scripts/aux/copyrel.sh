@@ -13,6 +13,7 @@ if [ ! -d "${TARGET}/libr" ]; then
 fi
 
 cp -f ${SOURCE}/binr/radare2/radare2 $TARGET
+cp -f ${SOURCE}/libr/crypto/libr_crypto.so $TARGET/libr/
 cp -f ${SOURCE}/libr/anal/libr_anal.so $TARGET/libr/
 cp -f ${SOURCE}/libr/arch/libr_arch.so $TARGET/libr/
 cp -f ${SOURCE}/libr/asm/libr_asm.so $TARGET/libr/
