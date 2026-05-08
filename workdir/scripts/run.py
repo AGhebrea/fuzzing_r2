@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument("-c", "--command", required=False, default="", type=str, help="Prepend command to invocation, must be quoted")
     parser.add_argument("-t", "--target", required=True, type=str, help="Custom R2 target taken from targets dir")
     parser.add_argument("-s", "--shim", action="store_true", required=False, default=False, help="Load libc shim")
-    parser.add_argument("-i", "--inferior", required=False, default="", type=str, help="R2 arguments, must be quoted")
+    parser.add_argument("-i", "--inferior", required=False, nargs='...', default="", type=str, help="R2 arguments, must be last")
     parser.add_argument("-p", "--preload", required=False, default="", type=str, help="Extra libraries to preload")
     args = parser.parse_args()
     if args.preload != "" and args.preload[-1] != ":":
