@@ -1,5 +1,9 @@
 #!/usr/bin/python
-import argparse, sys, os, pexpect
+import argparse
+import sys
+import os
+import pexpect
+import subprocess
 
 # TODO: do some predefined configs.
 # e.g debug config:
@@ -21,7 +25,7 @@ def parse_args():
     parser.add_argument("-c", "--command", required=False, default="", type=str, help="Prepend command to invocation, must be quoted")
     parser.add_argument("-t", "--target", required=True, type=str, help="Custom R2 target taken from targets dir")
     parser.add_argument("-s", "--shim", action="store_true", required=False, default=False, help="Load libc shim")
-    parser.add_argument("-i", "--inferior", required=False, nargs='...', default="", type=str, help="R2 arguments, must be last")
+    parser.add_argument("-i", "--inferior", required=False, default="", type=str, help="R2 arguments, must be last")
     parser.add_argument("-p", "--preload", required=False, default="", type=str, help="Extra libraries to preload")
     args = parser.parse_args()
     if args.preload != "" and args.preload[-1] != ":":
@@ -41,45 +45,34 @@ def prepare_env(args):
         env["LD_PRELOAD"] += f"{args.preload}{lib_dir}/libr_anal.so:{lib_dir}/libr_arch.so:{lib_dir}/libr_asm.so:{lib_dir}/libr_bin.so:{lib_dir}/libr_bp.so:{lib_dir}/libr_config.so:{lib_dir}/libr_cons.so:{lib_dir}/libr_core.so:{lib_dir}/libr_debug.so:{lib_dir}/libr_egg.so:{lib_dir}/libr_esil.so:{lib_dir}/libr_flag.so:{lib_dir}/libr_fs.so:{lib_dir}/libr_io.so:{lib_dir}/libr_lang.so:{lib_dir}/libr_magic.so:{lib_dir}/libr_main.so:{lib_dir}/libr_muta.so:{lib_dir}/libr_reg.so:{lib_dir}/libr_search.so:{lib_dir}/libr_socket.so:{lib_dir}/libr_syscall.so:{lib_dir}/libr_util.so:{lib_dir}/io_shm.so"
     return env
 
-def normalize(arr):
-    # remove empty strings that can come from non mandatory args
-    arr = [s for s in arr if s != ""]
-
-    flattened = []
-    for item in arr:
-        if isinstance(item, list):
-            flattened.extend(item)
-        else:
-            flattened.append(item)
-    s = ""
-    for el in flattened:
-        s+=el
-        s+=" "
-    return s
-
 def main():
     args = parse_args()
     env = prepare_env(args)
     target = f"{TARGET_DIR}/{args.target}/radare2"
-    command = normalize([args.command, target, args.inferior])
-    p = pexpect.spawn(command=command, env=env)
+    cmd_arr = [args.command, target, args.inferior]
+    cmd_arr = [word for x in cmd_arr if x for word in x.split(' ')]
+    command = ' '.join(cmd_arr)
     if sys.stdout.isatty():
+        p = pexpect.spawn(command=command, env=env)
         p.interact()
         p.close()
+        exitstatus = p.exitstatus
+        signalstatus = p.signalstatus
     else:
-        p.logfile_read = sys.stdout.buffer
-        p.expect(pexpect.EOF)
-    p.wait()
+        p = subprocess.Popen(args=cmd_arr, env=env,
+            stdout=sys.stdout, stderr=sys.stdout)
+        exitstatus = p.wait()
+        signalstatus = None
 
     # debug
     print(f"$ {command}")
-    print(f"exitstatus:     {p.exitstatus}")
-    print(f"signalstatus:   {p.signalstatus}")
+    print(f"exitstatus:     {exitstatus}")
+    print(f"signalstatus:   {signalstatus}")
 
     # propagate signal or exitcode
-    status = p.exitstatus
-    if p.signalstatus != None:
-        status = 128 + p.signalstatus
+    status = exitstatus
+    if signalstatus != None:
+        status = 128 + signalstatus
     exit(status)
 
 if __name__ == "__main__":
