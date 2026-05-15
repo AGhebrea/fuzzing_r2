@@ -63,8 +63,13 @@ def main():
     target = f"{TARGET_DIR}/{args.target}/radare2"
     command = normalize([args.command, target, args.inferior])
     p = pexpect.spawn(command=command, env=env)
-    p.interact()
-    p.close()
+    if sys.stdout.isatty():
+        p.interact()
+        p.close()
+    else:
+        p.logfile_read = sys.stdout.buffer
+        p.expect(pexpect.EOF)
+    p.wait()
 
     # debug
     print(f"$ {command}")
