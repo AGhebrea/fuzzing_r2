@@ -84,7 +84,7 @@ def _init_env(env, asan) -> Environment:
 
     local_env = copy.deepcopy(env)
     LIBR_PATH=f"{root_dir}/workdir/targets/{vname}/libr/"
-    AFL_PRELOAD=f"{LIBC_PRELOAD}:{LIBR_PATH}libr_crypto.so:{LIBR_PATH}libr_anal.so:{LIBR_PATH}libr_arch.so:{LIBR_PATH}libr_asm.so:{LIBR_PATH}libr_bin.so:{LIBR_PATH}libr_bp.so:{LIBR_PATH}libr_config.so:{LIBR_PATH}libr_cons.so:{LIBR_PATH}libr_core.so:{LIBR_PATH}libr_debug.so:{LIBR_PATH}libr_egg.so:{LIBR_PATH}libr_esil.so:{LIBR_PATH}libr_flag.so:{LIBR_PATH}libr_fs.so:{LIBR_PATH}libr_io.so:{LIBR_PATH}libr_lang.so:{LIBR_PATH}libr_magic.so:{LIBR_PATH}libr_main.so:{LIBR_PATH}libr_muta.so:{LIBR_PATH}libr_reg.so:{LIBR_PATH}libr_search.so:{LIBR_PATH}libr_socket.so:{LIBR_PATH}libr_syscall.so:{LIBR_PATH}libr_util.so:{LIBR_PATH}io_shm.so"
+    AFL_PRELOAD=f"{LIBC_PRELOAD}:{LIBR_PATH}libr_anal.so:{LIBR_PATH}libr_arch.so:{LIBR_PATH}libr_asm.so:{LIBR_PATH}libr_bin.so:{LIBR_PATH}libr_bp.so:{LIBR_PATH}libr_config.so:{LIBR_PATH}libr_cons.so:{LIBR_PATH}libr_core.so:{LIBR_PATH}libr_debug.so:{LIBR_PATH}libr_egg.so:{LIBR_PATH}libr_esil.so:{LIBR_PATH}libr_flag.so:{LIBR_PATH}libr_fs.so:{LIBR_PATH}libr_io.so:{LIBR_PATH}libr_lang.so:{LIBR_PATH}libr_magic.so:{LIBR_PATH}libr_main.so:{LIBR_PATH}libr_muta.so:{LIBR_PATH}libr_reg.so:{LIBR_PATH}libr_search.so:{LIBR_PATH}libr_socket.so:{LIBR_PATH}libr_syscall.so:{LIBR_PATH}libr_util.so:{LIBR_PATH}io_shm.so"
     local_env["AFL_PRELOAD"] = AFL_PRELOAD
     local_env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=1:symbolize=0:detect_stack_use_after_return=0"
     return Environment(
